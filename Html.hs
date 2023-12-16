@@ -10,6 +10,8 @@ module Html
     )
     where
 
+-- * Types
+
 newtype Html
     = Html String
 
@@ -19,25 +21,22 @@ newtype Structure
 type Title
     = String
 
+-- * Embedded Domain Specific Language HTML
+
 html_ :: Title -> Structure -> Html
 html_ title content =
     Html
     ( el "html"
-        ( el "head" (el "Title" title)
+        ( el "head" (el "title" (escape title))
           <> el "body" (getStructureString content) 
         )
     )
 
 p_ :: String -> Structure
-p_ = Structure . el "p"
+p_ = Structure . el "p" . escape
 
 h1_ :: String -> Structure
-h1_ = Structure . el "h1"
-
-
-el :: String -> String -> String
-el tag content =
-    "<" <> tag <> ">" <> content <> "</" <> tag <> ">"
+h1_ = Structure . el "h1" . escape
 
 append_ :: Structure -> Structure -> Structure
 append_ (Structure a) (Structure b) =
@@ -45,10 +44,7 @@ append_ (Structure a) (Structure b) =
 -- append_ c1 c2 = 
 --     Structure (getStructureString c1 <> getStructureString c2)
 
-getStructureString :: Structure -> String
-getStructureString content =
-    case content of
-        Structure str -> str
+-- * Render
 
 render :: Html -> String
 render html =
@@ -56,3 +52,27 @@ render html =
         Html str -> str
 
 
+-- * Utils
+
+el :: String -> String -> String
+el tag content =
+    "<" <> tag <> ">" <> content <> "</" <> tag <> ">"
+
+getStructureString :: Structure -> String
+getStructureString content =
+    case content of
+        Structure str -> str
+
+escape :: String -> String
+escape =
+    let
+        escapeChar c =
+            case c of
+                '<' -> "&lt;"
+                '>' -> "&gt;"
+                '&' -> "&amp;"
+                '"' -> "&quot;"
+                '\'' -> "&#39;"
+                _ -> [c]
+    in
+        concat . map escapeChar
