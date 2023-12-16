@@ -1,0 +1,1 @@
+# HTML blog project in Haskell
