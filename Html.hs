@@ -5,7 +5,6 @@ module Html
     , html_
     , p_
     , h1_
-    , append_
     , render
     , ul_
     , ol_
