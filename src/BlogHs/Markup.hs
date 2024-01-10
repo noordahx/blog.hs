@@ -19,12 +19,12 @@ data Structure
     | CodeBlock [String]
     deriving Show
 
-data Context
-    = CtxHeading Natural String
-    | CtxParagraph [String]
-    | CtxUnorderedList [String]
-    | CtxOrderedList [String]
-    | CtxCodeBlock [String]
+-- data Context
+--     = CtxHeading Natural String
+--     | CtxParagraph [String]
+--     | CtxUnorderedList [String]
+--     | CtxOrderedList [String]
+--     | CtxCodeBlock [String]
 
 -- parse :: String -> Document
 -- parse = parseLines [] . lines
