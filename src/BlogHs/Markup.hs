@@ -1,6 +1,7 @@
-module Markup
+module BlogHs.Markup
     ( Document
     , Structure(..)
+    , parse
     )
 where
     

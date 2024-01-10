@@ -1,4 +1,4 @@
-module Html.Internal where
+module BlogHs.Html.Internal where
 
 import Numeric.Natural
 
@@ -34,11 +34,11 @@ h_ :: Natural -> String -> Structure
 h_ n  = Structure . el ("h" <> show n) . escape
 
 instance Monoid Structure where
-    mempty :: Structure
-    mempty = empty_
+    mempty = Structure ""
+    -- mempty = empty_
 
 instance Semigroup Structure where
-    (<>) :: Structure -> Structure -> Structure
+    -- (<>) :: Structure -> Structure -> Structure
     (<>) c1 c2 =
         Structure (getStructureString c1 <> getStructureString c2)
         
@@ -109,4 +109,4 @@ mconcat :: Monoid a => [a] -> a
 mconcat list =
     case list of
         [] -> mempty
-        x : xs -> x <> mconcat xs
+        x : xs -> x <> BlogHs.Html.Internal.mconcat xs

@@ -1,4 +1,4 @@
-module Html
+module BlogHs.Html
     ( Html
     , Title
     , Structure
@@ -9,9 +9,9 @@ module Html
     , ul_
     , ol_
     , code_
-    , h_,
-    , empty_
+    , h_
+    -- , empty_
     )
     where
 
-import Html.Internal
+import BlogHs.Html.Internal
