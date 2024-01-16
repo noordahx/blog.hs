@@ -4,13 +4,17 @@ module BlogHs.Html
     , Structure
     , html_
     , p_
-    , h1_
-    , render
+    , h_
     , ul_
     , ol_
     , code_
-    , h_
-    -- , empty_
+    , Content
+    , txt_
+    , img_
+    , link_
+    , b_
+    , i_
+    , render
     )
     where
 
