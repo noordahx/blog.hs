@@ -36,6 +36,13 @@ Cabal commands:
 * `cabal test` - to run tests definted at `./test`
 
 
+Screenshots:
+
+* index.html
+![screenshot](images/index.png)
+
+* post.html
+![screenshot](images/post.png)
 
 
 Credits:
