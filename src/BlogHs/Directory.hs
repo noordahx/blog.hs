@@ -6,15 +6,17 @@ module BlogHs.Directory
     where
     
 import qualified BlogHs.Markup as Markup
-import qualified BlogHs.Html as html
+import qualified BlogHs.Html as Html
 import BlogHs.Convert (convert , convertStructure)
+import BlogHs.Env (Env(..))
 
 import Data.List (partition)
 import Data.Traversable (for)
-import Control.Modal (void, when)
+import Control.Monad (void, when)
+import Control.Monad.Reader (Reader, runReader, ask)
 
 import System.IO (hPutStrLn, stderr)
-import Control.Exception (catch, displayException, SomeExeption(..))
+import Control.Exception (catch, displayException, SomeException(..))
 import System.Exit (exitFailure)
 import System.FilePath
     ( takeExtension
@@ -34,12 +36,12 @@ import System.Directory
 -- | Copies files from one direcotyr to another, converting txt files to .htnl
 --      files in the process. Recording unsuccessful reads and writes to stderr
 -- May throw an exception on output dircetory creation.
-convertDirectory :: FilePath -> FilePath -> IO ()
-convertDirectory inputDir outputDir = do
+convertDirectory :: Env -> FilePath -> FilePath -> IO ()
+convertDirectory env inputDir outputDir = do
     DirContents filesToProcess filesToCopy <- getDirFilesAndContent inputDir
     createOutputDirectoryOrExit outputDir
     let 
-        outputHtmls = txtsToRenderedHtml filesToProcess
+        outputHtmls = runReader (txtsToRenderedHtml filesToProcess) env
     copyFiles outputDir filesToCopy
     writeFiles outputDir outputHtmls
     putStrLn "Done."
@@ -53,34 +55,33 @@ data DirContents
         , dcFilesToCopy :: [FilePath]
          -- ^ Other file paths, to be copied directly
         }
--- | Returns the direcotry contnet
-getDirFilesAndContent :: FilePath -> IO DirContents
 
--- | getDirFilesAndContent is responsible for providing the relevant files for processing (direcotry content)
+
+-- | Returns the direcotry contnet
 getDirFilesAndContent :: FilePath -> IO DirContents
 getDirFilesAndContent inputDir = do
     files <- map (inputDir </>) <$> listDirectory inputDir
     let
         (txtFiles, otherFiles) =
             partition ((== ".txt") . takeExtension) files
-        txtFilesAndContent <-
-            applyIoOnList readFile txtFiles >>= filterAndReportFailures
-        pure $ DirContents
-            { dcFilesToProcess = txtFilesAndContent
-            , dcFilesToCopy = otherFiles\
-            }
+    txtFilesAndContent <-
+      applyIoOnList readFile txtFiles >>= filterAndReportFailures
+    pure $ DirContents
+      { dcFilesToProcess = txtFilesAndContent
+      , dcFilesToCopy = otherFiles
+      }
     
-applyIoOnList :: (a -> IO b) -> [a] -> IO [(a, Either String b)]
 -- | Try to apply an IO function on a list of values, document successes and failures
+applyIoOnList :: (a -> IO b) -> [a] -> IO [(a, Either String b)]
 applyIoOnList action inputs = do
-    for inputs $ \input -> do
-        maybeResult <-
-            catch
-                (Right <$> action input)
-                ( \(SomeException e) -> do
-                    pure $ Left (displayException e)
-                    )
-            pure (input, maybeResult)
+  for inputs $ \input -> do
+    maybeResult <-
+      catch
+        (Right <$> action input)
+          ( \(SomeException e) -> do
+            pure $ Left (displayException e)
+          )
+    pure (input, maybeResult)
 
 -- | Filter out unsuccessful operations on files and report errors to stderr.
 filterAndReportFailures :: [(a, Either String b)] -> IO [(a, b)]
@@ -98,7 +99,7 @@ filterAndReportFailures =
 createOutputDirectoryOrExit :: FilePath -> IO ()
 createOutputDirectoryOrExit outputDir =
     whenIO
-        (not <$> createOutputDirectory otuptDir)
+        (not <$> createOutputDirectory outputDir)
         (hPutStrLn stderr "Cancelled." *> exitFailure)
 
 -- | Creates the output dir.
@@ -107,39 +108,40 @@ createOutputDirectory :: FilePath -> IO Bool
 createOutputDirectory dir = do
     dirExists <- doesDirectoryExist dir
     create <-
-        if dirExists
-            then do
-                override <- confirm "Output directory exits. Override?"
-                when override (removeDirectoryRecursive dir)
-                pure override
-            else
-                pure True
+      if dirExists
+        then do
+          override <- confirm "Output directory exists. Override?"
+          when override (removeDirectoryRecursive dir)
+          pure override
+        else
+          pure True
     when create (createDirectory dir)
     pure create
 
-
 -- | Convert text files to Markup, build an index, and render as html.
-txtToRenderedHtml :: [(FilePath, String)] -> [(FilePath, String)]
-txtToRenderedHtml txtFiles =
-    let
-        txtOutputFiles = map toOutputMarkupFile txtFiles
-        index = ("index.html", buildIndex txtOutputFiles)
-    in 
-        map (fmap Html.render) (index : map convertFile txtOutputFiles)
+txtsToRenderedHtml :: [(FilePath, String)] -> Reader Env [(FilePath, String)]
+txtsToRenderedHtml txtFiles = do
+  let
+    txtOutputFiles = map toOutputMarkupFile txtFiles
+  index <- (,) "index.html" <$> buildIndex txtOutputFiles
+  htmlPages <- traverse convertFile txtOutputFiles
+  pure $ map (fmap Html.render) (index : htmlPages)
     
 toOutputMarkupFile :: (FilePath, String) -> (FilePath, Markup.Document)
 toOutputMarkupFile (file, content) =
     (takeBaseName file <.> "html", Markup.parse content)
 
-convertFile :: (FilePath, Markup.Document) -> (FilePath, Html.Html)
-convertFile (file, doc) = (file, convert file doc)
+convertFile :: (FilePath, Markup.Document) -> Reader Env (FilePath, Html.Html)
+convertFile (file, doc) = do
+  env <- ask
+  pure (file, convert env (takeBaseName file) doc)
 
 -- | Copy files to direcotry, recording errors to stderr.
 copyFiles :: FilePath -> [FilePath] -> IO ()
 copyFiles outputDir files = do
     let 
         copyFromTo file = copyFile file (outputDir </> takeFileName file)
-    void $ applyIoOnList copyFromTo files >>- filterAndReportFailures
+    void $ applyIoOnList copyFromTo files >>= filterAndReportFailures
 
 -- | Write files to dir, recording errors to stderr.
 writeFiles :: FilePath -> [(FilePath, String)] -> IO ()
@@ -166,3 +168,29 @@ whenIO cond action = do
     if result
         then action
         else pure ()
+
+buildIndex :: [(FilePath, Markup.Document)] -> Reader Env Html.Html
+buildIndex files = do
+  env <- ask
+  let
+    previews = 
+      map
+        ( \(file, doc) ->
+          case doc of
+            Markup.Heading 1 heading : article ->
+              Html.h_ 3 (Html.link_ file (Html.txt_ heading))
+                <> foldMap convertStructure (take 2 article)
+                <> Html.p_ (Html.link_ file (Html.txt_ "..."))
+            _ ->
+              Html.h_ 3 (Html.link_ file (Html.txt_ file))
+        )
+        files
+  pure $ Html.html_
+    ( Html.title_ (eBlogName env)
+      <> Html.stylesheet_ (eStylesheetPath env)
+    )
+    ( Html.h_ 1 (Html.link_ "index.html" (Html.txt_ "Blog"))
+      <> Html.h_ 2 (Html.txt_ "Posts")
+      <> mconcat previews
+    )
+

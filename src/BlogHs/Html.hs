@@ -1,7 +1,11 @@
 module BlogHs.Html
     ( Html
+    , Head
+    , title_
     , Title
     , Structure
+    , stylesheet_
+    , meta_
     , html_
     , p_
     , h_
@@ -17,5 +21,8 @@ module BlogHs.Html
     , render
     )
     where
-
 import BlogHs.Html.Internal
+
+import Prelude hiding (head)
+
+
