@@ -17,34 +17,8 @@ data Structure
     | UnorderedList [String]
     | OrderedList [String]
     | CodeBlock [String]
-    deriving Show
+    deriving (Eq, Show)
 
--- data Context
---     = CtxHeading Natural String
---     | CtxParagraph [String]
---     | CtxUnorderedList [String]
---     | CtxOrderedList [String]
---     | CtxCodeBlock [String]
-
--- parse :: String -> Document
--- parse = parseLines [] . lines
-
--- parseLines :: [String] -> [String] -> Document
--- parseLines currentParagraph txts =
---     let
---         paragraph = Paragraph (unlines (reverse currentParagraph))
---     in
---         case txts of
---             [] -> [paragraph]
---             currentLine : rest ->
---                 if trim currentLine == ""
---                     then
---                         paragraph : parseLines [] rest
---                     else
---                         parseLines (currentLine : currentParagraph) rest
-
--- trim :: String -> String
--- trim = unwords . words
 
 parse :: String -> Document
 parse = parseLines Nothing . lines
