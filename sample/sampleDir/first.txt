@@ -1,19 +1,9 @@
-* This is a heading
+* Why FP Doesn't Matter?
 
-Sample paragraph of my test file
-
-> lkch = "lol kek cheburek"
+Some programming languages support nested functions – This significantly improves the maintainability of the code. Problems are easier to pinpoint and solve – FP's reliance on pure functions makes debugging and unit testing easier. Pure functions also prevent confusing issues and errors from developing in the code.
 
 Test unordered list:
 
 - first item
 - second item
 - last item
-
-Test ordered list
-
-# number one
-# number two
-# number three
-
-

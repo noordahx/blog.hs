@@ -1,14 +1,9 @@
-* This is a heading
+* How to Build an Exchange?
 
-Sample paragraph of my test file
-
-> lkch = "lol kek cheburek"
-
-Test unordered list:
-
-- first item
-- second item
-- last item
+What is an exchange? We’re going to talk about it from the perspective of the data structures, and the messages that get passed around to do what an exchange does. And so the first data structure we’re going to talk about is really just the limit order book. And this is a NASDAQ workstation style book, where it’s got the best prices to buy on this side, and the best prices to sell on this side. And you’ll see that buys are sorted in decreasing order, because when you sell something you’d like to get the highest price for it. And sales or offers are sorted in increasing order, because when you buy something, you’d like to buy it as cheaply as possible.
+> ghci> main = putStrLn "hello world"
+> ghci> main
+> hello world
 
 Test ordered list
 
